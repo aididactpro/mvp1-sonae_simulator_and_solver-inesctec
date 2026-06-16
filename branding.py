@@ -75,9 +75,15 @@ def inject_css():
     .card .unit {{color: {MUTED}; font-size: 0.8rem; font-weight: 500;}}
 
     .panel-title {{font-weight: 700; color: {VUB_BLUE}; margin: 6px 0 2px 2px;}}
+    /* larger section headers for the guided tab */
+    .section-title {{
+        font-size: 1.45rem; font-weight: 800; color: {VUB_BLUE};
+        margin: 18px 0 6px 2px; display: flex; align-items: center; gap: 8px;
+    }}
     .badge {{
         display: inline-block; background: {VUB_ORANGE_SOFT}; color: {VUB_ORANGE};
-        border-radius: 999px; padding: 2px 10px; font-size: 0.75rem; font-weight: 700; margin-left: 6px;
+        border-radius: 999px; padding: 2px 10px; font-size: 0.68rem; font-weight: 800;
+        margin-left: 6px; text-transform: uppercase; letter-spacing: .08em;
     }}
     .step {{
         background: {VUB_ORANGE}; color: #fff; border-radius: 999px; width: 26px; height: 26px;

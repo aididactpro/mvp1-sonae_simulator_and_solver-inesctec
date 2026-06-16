@@ -40,7 +40,7 @@ def render():
     # =====================================================================
     # 1) WHAT IS IT
     # =====================================================================
-    st.markdown('<div class="panel-title">1 · What is multi-objective picking?</div>',
+    st.markdown('<div class="section-title">1 · What is multi-objective picking?</div>',
                 unsafe_allow_html=True)
     st.markdown("""
 Imagine you walk into a supermarket with a **shopping list**. You want a *good* route to
@@ -89,7 +89,7 @@ These are **not the same**. A shortcut straight through a crowded aisle is *shor
     # =====================================================================
     # 2) BEGINNER ASSIGNMENT
     # =====================================================================
-    st.markdown('<div class="panel-title">2 · 🎒 Your first assignment '
+    st.markdown('<div class="section-title">2 · Your first assignment '
                 '<span class="badge">beginner</span></div>', unsafe_allow_html=True)
     st.markdown(
         "No prior knowledge needed. We use a fixed starter shopping list so everyone sees the "
@@ -148,7 +148,7 @@ These are **not the same**. A shortcut straight through a crowded aisle is *shor
     # =====================================================================
     # 3) ADVANCED PLAYGROUND
     # =====================================================================
-    st.markdown('<div class="panel-title">3 · 🔬 Research playground '
+    st.markdown('<div class="section-title">3 · Research playground '
                 '<span class="badge">advanced</span></div>', unsafe_allow_html=True)
     st.markdown(
         "Build any instance and probe the **mACO1** algorithm. Hover the 💡 hints for what each "
@@ -237,3 +237,81 @@ These are **not the same**. A shortcut straight through a crowded aisle is *shor
 
         st.caption("Tip: lower the iterations or ants and watch the recovered-points quality drop — "
                    "a hands-on feel for the accuracy/effort trade-off of metaheuristics.")
+
+    st.write("")
+
+    # =====================================================================
+    # 4) EXPERT — robustness, export, and research extensions
+    # =====================================================================
+    st.markdown('<div class="section-title">4 · Research playground '
+                '<span class="badge">expert</span></div>', unsafe_allow_html=True)
+    st.markdown("For experts: stress-test the solver and take the results away. One tool is live "
+                "below; the rest are documented extension points this platform is built to grow into "
+                "(it reuses the shopping list and settings from section 3).")
+
+    import maco_solver as _ms
+    xc1, xc2 = st.columns([1, 2])
+    with xc1:
+        n_seeds = st.slider("Independent seeds (robustness)", 1, 10, 5, key="l2_x_seeds")
+        _hint("🎲", "Why multiple seeds?", "mACO1 is stochastic: each random seed explores "
+              "differently. Running several and taking the **union of their fronts** gives a more "
+              "complete, more trustworthy Pareto front and shows how stable the result is.")
+
+    union = []
+    per_seed = []
+    for s in range(1, int(n_seeds) + 1):
+        rr = solve(tuple(adv_list), int(adv_start), int(num_ants), int(max_iter), s)["routes"]
+        per_seed.append(len(rr))
+        for r in rr:
+            key = (round(r.distance, 3), round(r.time, 3))
+            if any(_ms._dominates((g.distance, g.time), (r.distance, r.time)) or
+                   (round(g.distance, 3), round(g.time, 3)) == key for g in union):
+                continue
+            union = [g for g in union if not _ms._dominates((r.distance, r.time), (g.distance, g.time))]
+            union.append(r)
+    union.sort(key=lambda r: (r.distance, r.time))
+
+    with xc2:
+        avg = sum(per_seed) / len(per_seed)
+        st.markdown(f"""
+        <div class="cards" style="grid-template-columns: repeat(3,1fr);">
+          <div class="card"><div class="label">Union front</div><div class="value">{len(union)}</div><div class="unit">routes over {int(n_seeds)} seeds</div></div>
+          <div class="card"><div class="label">Avg per seed</div><div class="value">{avg:.1f}</div><div class="unit">routes</div></div>
+          <div class="card"><div class="label">Per-seed sizes</div><div class="value" style="font-size:0.95rem;">{per_seed}</div></div>
+        </div>
+        """, unsafe_allow_html=True)
+        csv = "route,distance_m,time_min\n" + "\n".join(
+            f"{i + 1},{meters(r.distance):.1f},{minutes(r.time):.1f}" for i, r in enumerate(union))
+        st.download_button("⬇️ Download union Pareto front (CSV)", csv,
+                           file_name="pareto_front.csv", mime="text/csv", key="l2_x_csv")
+
+    st.markdown("**Extension points** — research directions this platform is built to grow into:")
+    e1, e2 = st.columns(2)
+    with e1:
+        with st.expander("🚀 Advanced experiments", expanded=False):
+            st.markdown("""
+- **Quality indicators.** Report **hypervolume** and **IGD+** (via `moocore`) and plot
+  convergence over iterations, not just point counts.
+- **Algorithm comparison.** Run **BicriterionAnt / MACS / NSGA-II** side by side on the same
+  instance.
+- **Batch experiments & export.** Multi-seed sweeps (the tool above is a first step),
+  CSV/JSON export of fronts, reproducible configs.
+            """)
+    with e2:
+        with st.expander("🏬 Closer to the real store", expanded=False):
+            st.markdown("""
+- **Constraints.** Honour precedence, first/last product, fresh/frozen-last and queue waits
+  inside the multi-objective search (this version is source → checkout + list only).
+- **Real path-level trade-offs.** Expose the per-leg bi-objective path options explicitly.
+- **Bring-your-own instance.** Upload a store graph / product map (like the Job-Shop demo's
+  file uploader).
+            """)
+    with st.expander("⚙️ Technical & modelling notes", expanded=False):
+        st.markdown("""
+- The **congestion time model** is an illustrative assumption, not measured data — it should be
+  swappable for real walking-time / dwell-time observations.
+- mACO1 parameters are exposed but **not auto-tuned**; an `irace`-style tuner would help.
+- The brute-force **exact-front check** only runs for small instances (≤ 7 stops); larger ones
+  rely on the metaheuristic alone.
+- Caching keys on the shopping list + parameters; changing the congestion model needs a cache reset.
+        """)
