@@ -19,7 +19,46 @@ class Nodes:
     def __repr__(self):
         return f"Nodes(id={self.node_id}, coords={self.coords}, products={self.products})"
 
-def create_graph(horizontal, max_row, products, V_pay, V_frozen, V_fresh, meat_station, fish_station,seed=42):
+def aisle_congestion(coords_a, coords_b):
+    """Travel-time multiplier for the edge between two adjacent nodes.
+
+    The *distance* objective is the pure walked length (one step per edge).
+    The *time* objective is that length scaled by how congested the aisle is,
+    so the two objectives are no longer identical and a genuine Pareto front
+    exists for the multi-objective solver.
+
+    Congestion is a deterministic function of the edge midpoint, modelling a
+    typical hypermarket layout:
+      - the central fresh/produce zone (mid columns) is crowded -> slower,
+      - busy mid-store aisles add extra delay,
+      - the top row near the service stations is a bottleneck,
+      - outer perimeter lanes and the entrance lane near the tills are fast.
+
+    Returns a multiplier in roughly [0.45, 3.0]. With factor == 1 everywhere
+    this reduces to the original "time == distance" behaviour.
+    """
+    mx = 0.5 * (coords_a[0] + coords_b[0])   # edge midpoint x (column)
+    my = 0.5 * (coords_a[1] + coords_b[1])   # edge midpoint y (row)
+
+    factor = 1.0
+    # Crowded central fresh & produce core (mid columns, mid rows): heavily
+    # congested, so cutting straight through it is short but slow.  The
+    # penalty is deliberately large so that detouring via the fast perimeter
+    # lanes can genuinely save time at the cost of extra distance -- which is
+    # what creates the Pareto trade-off between the distance and time
+    # objectives.
+    if 4 <= mx <= 12 and 2 <= my <= 10:
+        factor += 5.0
+    # Fast outer perimeter lanes (leftmost / rightmost columns).
+    if mx <= 2 or mx >= 14:
+        factor *= 0.4
+    # Fast main entrance / checkout lane along the bottom.
+    if my <= 1.5:
+        factor *= 0.4
+    return factor
+
+
+def create_graph(horizontal, max_row, products, V_pay, V_frozen, V_fresh, meat_station, fish_station, seed=42, congestion=True):
 
     random.seed(seed)
 
@@ -63,7 +102,12 @@ def create_graph(horizontal, max_row, products, V_pay, V_frozen, V_fresh, meat_s
             for j, data2 in nodes.items():
                 if i != j:
                     distance = manhattan_distance(data1.coords, data2.coords)  # Access coords using dot notation
-                    travel_time = distance  # Assume 1 meter / time unit velocity
+                    # Travel time = walked length scaled by aisle congestion, so
+                    # the time objective genuinely differs from the distance one.
+                    if congestion:
+                        travel_time = distance * aisle_congestion(data1.coords, data2.coords)
+                    else:
+                        travel_time = distance  # legacy mode: 1 distance unit / time unit
                     if distance < 2:
                         #Add a small bias to the arcs with higher bias for the ones with higher x and y)
                         bias = 0.0001 * (data1.coords[0] + data1.coords[1] + data2.coords[0] + data2.coords[1])
