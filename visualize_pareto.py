@@ -13,14 +13,15 @@ from __future__ import annotations
 
 import plotly.graph_objects as go
 
-# Palette (kept in sync with .streamlit/config.toml)
-ACCENT = "#E2231A"        # SONAE-ish red
-ACCENT_SOFT = "rgba(226,35,26,0.15)"
+# Palette — VUB AI Research Group (see branding.py)
+ROUTE = "#003399"         # VUB blue — the walked route
+ACCENT = "#FF6600"        # VUB orange — selected Pareto point
+ACCENT_SOFT = "rgba(255,102,0,0.15)"
 INK = "#1f2937"
 MUTED = "#9ca3af"
 FAST = "#16a34a"
 CONGEST = "rgba(239,68,68,0.10)"
-GRID = "rgba(148,163,184,0.35)"
+GRID = "rgba(0,51,153,0.18)"
 
 
 def _shelf_shapes(max_column, horizontal):
@@ -74,7 +75,7 @@ def store_map(G, nodes, products, route, v_0, v_end, max_column, horizontal,
         ry = [pos[n][1] for n in route.full_path]
         fig.add_trace(go.Scatter(
             x=rx, y=ry, mode="lines",
-            line=dict(width=4, color=ACCENT),
+            line=dict(width=4, color=ROUTE),
             hoverinfo="none", name="route"))
 
     # --- product markers on the shopping list ---
@@ -119,7 +120,7 @@ def pareto_scatter(routes, selected_idx=None):
 
     text = [f"#{i+1}<br>distance {d:.1f}<br>time {t:.1f}"
             for i, (d, t) in enumerate(zip(xs, ys))]
-    colors = [ACCENT if i == selected_idx else "#64748b" for i in range(len(routes))]
+    colors = [ACCENT if i == selected_idx else ROUTE for i in range(len(routes))]
     sizes = [20 if i == selected_idx else 12 for i in range(len(routes))]
 
     fig.add_trace(go.Scatter(
