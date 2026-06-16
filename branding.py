@@ -86,7 +86,19 @@ def inject_css():
     }}
     .note {{
         background: #f5f8ff; border-left: 4px solid {VUB_BLUE}; border-radius: 8px;
-        padding: 10px 14px; color: {INK}; font-size: 0.9rem;
+        padding: 10px 14px; color: {INK}; font-size: 0.95rem; line-height: 1.5;
+    }}
+
+    /* concept "tiles" (the pop-up hint triggers) — bigger, card-like */
+    div[data-testid="stPopover"] button {{
+        font-size: 1.05rem !important; font-weight: 700 !important;
+        color: {VUB_BLUE} !important;
+        border: 1.5px solid {VUB_BLUE} !important; border-radius: 12px !important;
+        background: #f5f8ff !important; padding: 10px 6px !important; width: 100%;
+    }}
+    div[data-testid="stPopover"] button:hover {{
+        background: {VUB_ORANGE} !important; color: #fff !important;
+        border-color: {VUB_ORANGE} !important;
     }}
     </style>
     """, unsafe_allow_html=True)

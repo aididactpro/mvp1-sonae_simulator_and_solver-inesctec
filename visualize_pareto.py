@@ -110,15 +110,16 @@ def pareto_scatter(routes, selected_idx=None):
     if not routes:
         return fig
 
-    xs = [r.distance for r in routes]
-    ys = [r.time for r in routes]
+    import units
+    xs = [units.meters(r.distance) for r in routes]
+    ys = [units.minutes(r.time) for r in routes]
 
     # connecting step line (the front is sorted by distance)
     fig.add_trace(go.Scatter(
         x=xs, y=ys, mode="lines", line=dict(color=MUTED, width=1, dash="dot"),
         hoverinfo="none"))
 
-    text = [f"#{i+1}<br>distance {d:.1f}<br>time {t:.1f}"
+    text = [f"#{i+1}<br>{d:.0f} m<br>{t:.1f} min"
             for i, (d, t) in enumerate(zip(xs, ys))]
     colors = [ACCENT if i == selected_idx else ROUTE for i in range(len(routes))]
     sizes = [20 if i == selected_idx else 12 for i in range(len(routes))]
@@ -137,9 +138,9 @@ def pareto_scatter(routes, selected_idx=None):
         height=560, showlegend=False,
         margin=dict(l=10, r=10, t=10, b=10),
         paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)",
-        xaxis=dict(title="Distance (steps) →  shorter is better ←",
+        xaxis=dict(title="Distance walked (m)  ·  ← shorter is better",
                    gridcolor=GRID, zeroline=False),
-        yaxis=dict(title="Time (min) →  faster is better ←",
+        yaxis=dict(title="Time (min)  ·  ← faster is better",
                    gridcolor=GRID, zeroline=False),
     )
     return fig

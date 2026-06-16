@@ -4,6 +4,7 @@ import streamlit as st
 
 from store import get_store, solve, V_PAY, MAX_COLUMN, HORIZONTAL, CONGESTION_BOX
 from visualize_pareto import store_map, pareto_scatter
+from units import meters, minutes
 
 
 def render():
@@ -58,9 +59,9 @@ def render():
         st.markdown(f"""
         <div class="cards">
           <div class="card"><div class="label">Pareto routes</div><div class="value">{len(routes)}</div></div>
-          <div class="card"><div class="label">Selected distance</div><div class="value">{sel.distance:.0f} <span class="unit">steps</span></div></div>
-          <div class="card"><div class="label">Selected time</div><div class="value">{sel.time:.0f} <span class="unit">min</span></div></div>
-          <div class="card"><div class="label">Best possible</div><div class="value">{d_min:.0f}<span class="unit">st</span> / {t_min:.0f}<span class="unit">min</span></div></div>
+          <div class="card"><div class="label">Selected distance</div><div class="value">{meters(sel.distance):.0f} <span class="unit">m</span></div></div>
+          <div class="card"><div class="label">Selected time</div><div class="value">{minutes(sel.time):.1f} <span class="unit">min</span></div></div>
+          <div class="card"><div class="label">Best possible</div><div class="value">{meters(d_min):.0f}<span class="unit">m</span> / {minutes(t_min):.1f}<span class="unit">min</span></div></div>
           <div class="card"><div class="label">Solver</div><div class="value">{res['elapsed']:.2f}<span class="unit">s</span></div><div class="unit">{res['n_iter']} iters · {res['n_stops']} stops</div></div>
         </div>
         """, unsafe_allow_html=True)
@@ -94,8 +95,8 @@ def render():
         for i, r in enumerate(routes):
             profile = ("shortest" if r.distance == d_min else
                        "fastest" if r.time == t_min else "balanced")
-            table.append({"#": i + 1, "Distance (steps)": round(r.distance, 1),
-                          "Time (min)": round(r.time, 1), "Profile": profile,
+            table.append({"#": i + 1, "Distance (m)": round(meters(r.distance)),
+                          "Time (min)": round(minutes(r.time), 1), "Profile": profile,
                           "Stops (order)": " → ".join(str(n) for n in r.stop_order),
                           "": "⬅ selected" if i == st.session_state.p1_sel else ""})
         st.dataframe(table, use_container_width=True, hide_index=True)

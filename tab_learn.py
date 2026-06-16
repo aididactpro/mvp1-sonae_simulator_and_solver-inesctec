@@ -1,26 +1,28 @@
 """Tab 2 — Guided Planner: learn multi-objective picking from scratch.
 
 A scaffolded journey: what-it-is intro with pop-up hints -> a beginner
-assignment -> an advanced research playground -> an honest UX/feature
-assessment. Modelled on the lab's Job-Shop scheduling demo UX.
+assignment -> an advanced research playground. Modelled on the lab's Job-Shop
+scheduling demo UX.
 """
 
 import streamlit as st
 
 from store import get_store, solve, true_front, V_PAY, MAX_COLUMN, HORIZONTAL, CONGESTION_BOX
 from visualize_pareto import store_map, pareto_scatter
+from units import meters, minutes
 
-# A small, fixed list that yields a clear 3-point front for the lesson.
-BEGINNER_LIST = [35, 36, 31, 26, 41]
+# A realistic basket spread across six different aisles of the store
+# (Wine, Egg, Apple, Bread, Vegetables, Cookie) — not clustered in one aisle.
+BEGINNER_LIST = [28, 26, 1, 18, 13, 36]
 
 
-def _hint(label, body):
-    """Short pop-up hint (falls back to a tooltip on older Streamlit)."""
+def _hint(icon, label, body):
+    """Short pop-up hint tile (falls back to a caption on older Streamlit)."""
     try:
-        with st.popover(f"💡 {label}"):
+        with st.popover(f"{icon}  {label}"):
             st.markdown(body)
     except Exception:
-        st.caption(f"💡 **{label}** — {body}")
+        st.caption(f"{icon} **{label}** — {body}")
 
 
 def render():
@@ -44,33 +46,41 @@ def render():
 Imagine you walk into a supermarket with a **shopping list**. You want a *good* route to
 collect everything and reach the checkout. But "good" can mean two different things:
 
-- **Distance** — walk as few steps as possible.
+- **Distance** — walk as few metres as possible.
 - **Time** — finish as fast as possible.
 
 These are **not the same**. A shortcut straight through a crowded aisle is *short* but
-*slow*; going the long way around an empty aisle is *longer* but *faster*. When two goals
-like this pull in different directions, we have a **multi-objective problem**.
+*slow* (you wait behind other shoppers); going the long way around a clear aisle is
+*longer* but *faster*. When two goals like this pull in different directions, we have a
+**multi-objective problem**.
     """)
 
+    st.caption("Tap a concept to learn what it means 👇")
     h1, h2, h3, h4 = st.columns(4)
     with h1:
-        _hint("Objective", "A thing you want to make as good as possible — here, *distance* "
-                           "and *time*. We **minimise** both.")
+        _hint("🎯", "Objective", "A thing you want to make as good as possible — here, "
+                                 "*distance* and *time*. We **minimise** both.")
     with h2:
-        _hint("Trade-off", "Improving one objective makes the other worse. You can't always "
-                           "have the shortest **and** the fastest route at once.")
+        _hint("⚖️", "Trade-off", "Improving one objective makes the other worse. You can't "
+                                 "always have the shortest **and** the fastest route at once.")
     with h3:
-        _hint("Dominate", "Route A **dominates** route B if A is at least as good on *both* "
-                          "objectives and strictly better on one. Dominated routes are never worth choosing.")
+        _hint("🥇", "Dominate", "Route A **dominates** route B if A is at least as good on "
+                               "*both* objectives and strictly better on one. Dominated routes "
+                               "are never worth choosing — something else beats them outright.")
     with h4:
-        _hint("Pareto front", "The set of routes that **nothing else dominates**. Each is a "
-                             "legitimate 'best' depending on how much you value time vs distance.")
+        _hint("📈", "Pareto front", "The set of routes that **nothing else dominates**. Each "
+                                   "one is a legitimate 'best', depending on how much you value "
+                                   "time versus distance.")
 
     st.markdown("""
     <div class="note">
-    🧭 <b>The big idea:</b> instead of forcing you to choose distance <i>or</i> time up front,
-    the planner returns <b>every</b> sensible compromise — the <b>Pareto front</b> — and lets
-    <i>you</i> pick the balance you like.
+    🧭 <b>More about the Pareto front.</b> Think of it as the menu of <i>smart</i> choices.
+    Every route on it is optimal <i>for some priority</i>: if you care only about distance,
+    pick the left-most point; only about time, the bottom one; somewhere in between, a middle
+    point. As you move along the front you always <b>give up a little of one objective to gain
+    a little of the other</b> — never something for nothing. Anything <i>off</i> the front is
+    simply wasteful: another route beats it on both counts. The planner's job is not to guess
+    your preference, but to hand you this whole menu so <b>you</b> decide the balance.
     </div>
     """, unsafe_allow_html=True)
 
@@ -101,7 +111,7 @@ like this pull in different directions, we have a **multi-objective problem**.
                 'and the route on the map. Switch between the shortest and the fastest route 👇',
                 unsafe_allow_html=True)
 
-    pick = st.radio("Show route:", ["⬇️ Shortest (fewest steps)", "⚡ Fastest (least time)"],
+    pick = st.radio("Show route:", ["⬇️ Shortest (fewest metres)", "⚡ Fastest (least time)"],
                     horizontal=True, key="l2_pick")
     chosen = shortest if pick.startswith("⬇️") else fastest
     sel_idx = routes.index(chosen)
@@ -116,21 +126,22 @@ like this pull in different directions, we have a **multi-objective problem**.
 
     st.markdown('<span class="step">3</span> Now answer these — open each box to check.',
                 unsafe_allow_html=True)
-    extra_steps = fastest.distance - shortest.distance
-    saved_min = shortest.time - fastest.time
+    extra_m = meters(fastest.distance - shortest.distance)
+    saved_min = minutes(shortest.time - fastest.time)
     with st.expander("❓ How many routes are on the Pareto front?"):
         st.success(f"**{len(routes)}**. Each one is a different, sensible compromise between "
                    "distance and time — none is 'wrong'.")
     with st.expander("❓ Which route is shortest, and which is fastest?"):
-        st.success(f"Shortest: **{shortest.distance:.0f} steps** (but **{shortest.time:.0f} min**).  \n"
-                   f"Fastest: **{fastest.time:.0f} min** (but **{fastest.distance:.0f} steps**).")
+        st.success(
+            f"Shortest: **{meters(shortest.distance):.0f} m** (but **{minutes(shortest.time):.1f} min**).  \n"
+            f"Fastest: **{minutes(fastest.time):.1f} min** (but **{meters(fastest.distance):.0f} m**).")
     with st.expander("❓ What do you give up to go fast instead of short?"):
-        st.success(f"Going fastest instead of shortest costs **{extra_steps:.0f} extra steps** "
-                   f"but saves **{saved_min:.0f} minutes**. Whether that's worth it is *your* call — "
+        st.success(f"Going fastest instead of shortest costs about **{extra_m:.0f} m extra walking** "
+                   f"but saves about **{saved_min:.1f} min**. Whether that's worth it is *your* call — "
                    "that choice is exactly what the Pareto front hands back to you.")
     with st.expander("❓ Why is the shortest route slow? (look at the map)"):
         st.success("The shortest route cuts straight through the **congested core** (shaded). "
-                   "The fastest route detours along the **clear perimeter lanes** — more steps, less time.")
+                   "The fastest route detours along the **clear perimeter lanes** — more metres, less time.")
 
     st.write("")
 
@@ -159,17 +170,18 @@ like this pull in different directions, we have a **multi-objective problem**.
 
         a1, a2 = st.columns(2)
         with a1:
-            _hint("Ants", "More ants build more candidate routes per iteration — broader search, "
-                          "slower. mACO1 splits them across 3 weight groups (distance / balanced / time).")
+            _hint("🐜", "Ants", "More ants build more candidate routes per iteration — broader "
+                               "search, slower. mACO1 splits them across 3 weight groups "
+                               "(distance / balanced / time).")
         with a2:
-            _hint("Iterations", "How many rounds of build → learn (deposit pheromone) → repeat. "
-                                "More iterations = more refinement, up to a point.")
+            _hint("🔁", "Iterations", "How many rounds of build → learn (deposit pheromone) → "
+                                     "repeat. More iterations = more refinement, up to a point.")
         num_ants = st.slider("Ants", 30, 120, 60, step=30, key="l2_adv_ants")
         max_iter = st.slider("Iterations", 50, 400, 150, step=50, key="l2_adv_iter")
         seed = st.number_input("Random seed", value=1, step=1, key="l2_adv_seed")
-        _hint("MMAS & congestion", "mACO1 uses MAX–MIN Ant System pheromone limits and a mixed "
-              "best-so-far schedule. The **time** objective is distance × *aisle congestion*: the "
-              "central core is slow, the perimeter is fast — that's what creates the trade-off.")
+        _hint("🧪", "MMAS & congestion", "mACO1 uses MAX–MIN Ant System pheromone limits and a "
+              "mixed best-so-far schedule. The **time** objective is distance × *aisle congestion*: "
+              "the central core is slow, the perimeter is fast — that's what creates the trade-off.")
 
     if not adv_list:
         with pcol2:
@@ -225,51 +237,3 @@ like this pull in different directions, we have a **multi-objective problem**.
 
         st.caption("Tip: lower the iterations or ants and watch the recovered-points quality drop — "
                    "a hands-on feel for the accuracy/effort trade-off of metaheuristics.")
-
-    st.write("")
-
-    # =====================================================================
-    # 4) UX & FEATURE ASSESSMENT
-    # =====================================================================
-    st.markdown('<div class="panel-title">4 · 🧭 What\'s missing & how to improve it</div>',
-                unsafe_allow_html=True)
-    st.markdown("An honest assessment of this planner for **public** (learners) and **academic** "
-                "(researchers) use — and a roadmap.")
-
-    g1, g2 = st.columns(2)
-    with g1:
-        with st.expander("👥 For public / learners — UX gaps", expanded=False):
-            st.markdown("""
-- **Onboarding tour.** A one-time guided overlay (e.g. highlight the front, then the map) would
-  beat a wall of text. *Missing.*
-- **Plain-language toggle.** Hide jargon by default; reveal "researcher mode" terms on demand.
-- **Live linked highlighting.** Hovering a Pareto point should pulse the matching route on the
-  map (and vice-versa). Currently selection is click-only.
-- **Narrated comparison.** "This route saves you 12 min for 8 extra steps" auto-generated for the
-  selected point, not just in the assignment.
-- **Accessibility.** Colour-blind-safe palette option, larger hit targets, keyboard navigation.
-- **Mobile layout.** The two-column map+front does not reflow well on phones.
-            """)
-    with g2:
-        with st.expander("🎓 For researchers / academic — feature gaps", expanded=False):
-            st.markdown("""
-- **Quality indicators.** Report **hypervolume** and **IGD+** (via `moocore`) and plot convergence
-  over iterations, not just point counts.
-- **Algorithm comparison.** Run BicriterionAnt / MACS / NSGA-II side by side on the same instance.
-- **Constraints.** Honour precedence, first/last product, fresh/frozen-last and queue waits inside
-  the multi-objective search (this version is source → checkout + list only).
-- **Real path-level trade-offs.** Expose the per-leg bi-objective path options explicitly.
-- **Batch experiments & export.** Multi-seed runs, CSV/JSON export of fronts, reproducible configs.
-- **Bring-your-own instance.** Upload a store graph / product map (like the Job-Shop demo's file
-  uploader).
-            """)
-
-    with st.expander("⚙️ Technical / modelling notes", expanded=False):
-        st.markdown("""
-- The **congestion time model** is an illustrative assumption, not measured data — it should be
-  swappable for real walking-time / dwell-time observations.
-- mACO1 parameters are exposed but **not auto-tuned**; an `irace`-style tuner would help.
-- Brute-force exact-front check only runs for small instances (≤ 7 stops); larger ones rely on the
-  metaheuristic alone.
-- Caching keys on the shopping list + params; changing the congestion model needs a cache reset.
-        """)
