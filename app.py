@@ -23,7 +23,7 @@ branding.inject_css()
 branding.header("Multi-objective Picking Planner",
                 "VUB AI Research Group · mACO1 ant colony optimisation · SONAE / PEER use case")
 
-tab1, tab2, tab3 = st.tabs(["🛒 Planner 1", "🎓 Guided Planner", "ℹ️ About"])
+tab1, tab2, tab3 = st.tabs(["Planner 1", "Guided Planner", "About"])
 
 with tab1:
     tab_planner.render()

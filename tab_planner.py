@@ -13,7 +13,7 @@ def render():
 
     st.markdown("""
     <div class="hero">
-      <h2>🛒 Planner 1 — Multi-objective picking</h2>
+      <h2>Planner 1 — Multi-objective picking</h2>
       <p>mACO1 ant colony optimisation computes the full Pareto front of picking routes,
          trading <b>walking distance</b> against <b>time</b> for your shopping list.
          Click any point on the front to draw that route.</p>

@@ -6,7 +6,7 @@ import streamlit as st
 def render():
     st.markdown("""
     <div class="hero">
-      <h2>ℹ️ About this project</h2>
+      <h2>About this project</h2>
       <p>A multi-objective route-planning simulator for in-store picking, built around the
          mACO1 ant colony optimisation algorithm.</p>
     </div>

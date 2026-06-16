@@ -31,7 +31,7 @@ def render():
 
     st.markdown("""
     <div class="hero">
-      <h2>🎓 Guided Planner — from zero to multi-objective</h2>
+      <h2>Guided Planner</h2>
       <p>New to this? Start at the top. We explain what the problem is, let you try a
          guided first task, then open a playground for deeper experiments.</p>
     </div>
@@ -179,9 +179,19 @@ These are **not the same**. A shortcut straight through a crowded aisle is *shor
         num_ants = st.slider("Ants", 30, 120, 60, step=30, key="l2_adv_ants")
         max_iter = st.slider("Iterations", 50, 400, 150, step=50, key="l2_adv_iter")
         seed = st.number_input("Random seed", value=1, step=1, key="l2_adv_seed")
-        _hint("🧪", "MMAS & congestion", "mACO1 uses MAX–MIN Ant System pheromone limits and a "
-              "mixed best-so-far schedule. The **time** objective is distance × *aisle congestion*: "
-              "the central core is slow, the perimeter is fast — that's what creates the trade-off.")
+        s1, s2 = st.columns(2)
+        with s1:
+            _hint("🎲", "Random seed", "mACO1 makes random choices (which stop an ant visits next). "
+                  "The seed fixes that randomness so a run is **reproducible** — same seed, same "
+                  "result every time. Change it for a different independent run; the Expert section "
+                  "below combines several seeds into one front.")
+        with s2:
+            _hint("🧪", "MMAS & congestion", "Two different things. **MMAS** (MAX–MIN Ant System) is "
+                  "*how the search works*: it keeps pheromone within limits so the ants keep exploring "
+                  "instead of locking onto one route too early. **Congestion** is *what is being "
+                  "optimised*: the **time** objective is distance × aisle congestion, so the slow "
+                  "central core versus the fast perimeter is exactly what makes distance and time "
+                  "disagree — and therefore creates the Pareto trade-off MMAS then searches for.")
 
     if not adv_list:
         with pcol2:
@@ -238,6 +248,45 @@ These are **not the same**. A shortcut straight through a crowded aisle is *shor
         st.caption("Tip: lower the iterations or ants and watch the recovered-points quality drop — "
                    "a hands-on feel for the accuracy/effort trade-off of metaheuristics.")
 
+        # ---- auto-generated plain-language explanation of the current result ----
+        sh = min(routes2, key=lambda r: r.distance)
+        fa = min(routes2, key=lambda r: r.time)
+        if tf is not None and match == len(truth):
+            compare = ("It also **matches the exact Pareto front** computed by brute force, so for this "
+                       "instance these really are *all* the best trade-offs — mACO1 found the optimum.")
+        elif tf is not None:
+            compare = (f"Brute force says the exact front has **{len(truth)}** points and mACO1 recovered "
+                       f"**{match}** of them — close, but a few were missed (try more ants or iterations).")
+        else:
+            compare = ("This instance is too large to verify by brute force, so the front is mACO1's best "
+                       "*estimate* — more ants/iterations, or unioning several seeds (Expert section), make "
+                       "it more reliable.")
+
+        intro = (f"**What you are looking at.** The scatter is the **Pareto front**: the x-axis is distance "
+                 f"walked (m), the y-axis is time (min), and every dot is one complete route. Down-and-left is "
+                 f"better — but no dot beats another on *both* axes at once, which is exactly what "
+                 f"\"non-dominated\" means.")
+
+        if len(routes2) == 1:
+            body = (f"\n\n**What the solver found.** For your {len(adv_list)}-item list there is a single "
+                    f"non-dominated route ({meters(sh.distance):.0f} m / {minutes(sh.time):.1f} min): here the "
+                    f"shortest route is also the fastest, so there is nothing to trade off.\n\n"
+                    f"**How good is it?** {compare}")
+        else:
+            extra_m = meters(fa.distance - sh.distance)
+            saved = minutes(sh.time - fa.time)
+            body = (f"\n\n**What the solver found.** For your {len(adv_list)}-item list, mACO1 returned "
+                    f"**{len(routes2)}** non-dominated routes. The **shortest** is {meters(sh.distance):.0f} m / "
+                    f"{minutes(sh.time):.1f} min; the **fastest** is {minutes(fa.time):.1f} min / "
+                    f"{meters(fa.distance):.0f} m. Switching from shortest to fastest means walking about "
+                    f"**{extra_m:.0f} m more** to save about **{saved:.1f} min**. The route drawn on the map is "
+                    f"the one you selected (#{st.session_state.l2_adv_sel + 1}).\n\n"
+                    f"**How good is it?** {compare}")
+
+        with st.container(border=True):
+            st.markdown("#### 📝 In plain words")
+            st.markdown(intro + body)
+
     st.write("")
 
     # =====================================================================
@@ -253,6 +302,10 @@ These are **not the same**. A shortcut straight through a crowded aisle is *shor
     xc1, xc2 = st.columns([1, 2])
     with xc1:
         n_seeds = st.slider("Independent seeds (robustness)", 1, 10, 5, key="l2_x_seeds")
+        st.caption("A **seed** sets mACO1's random starting point. Because the algorithm is "
+                   "stochastic, each seed is a different independent run — combining several and "
+                   "keeping the **union of their Pareto fronts** gives a fuller, more reliable "
+                   "result and shows how stable it is across runs.")
         _hint("🎲", "Why multiple seeds?", "mACO1 is stochastic: each random seed explores "
               "differently. Running several and taking the **union of their fronts** gives a more "
               "complete, more trustworthy Pareto front and shows how stable the result is.")
